@@ -9,12 +9,14 @@ fn main() {
         if let Ok(_) = context.connect() {
             if let Ok(tpm) = context.get_tpm_object() {
                 println!("I'M IN UR TPM READING UR PCRZ (From Rust!)");
-                println!("TPM handle: {:?}", tpm.handle);
                 for i in 0..24 {
                     if let Ok(vec) = tpm.pcr_read(i) {
                         print!("PCR {:02}", i);
-                        for j in 0..19 {
-                            print!(" {:02x}", vec[j]);
+                        for j in 0..vec.len() {
+                            if j % 4 == 0 {
+                                print!(" ");
+                            }
+                            print!("{:02x}", vec[j]);
                         }
                         print!("\n");
                     }
