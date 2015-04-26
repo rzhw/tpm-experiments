@@ -1,0 +1,7 @@
+[package]
+name = "shirtshirts"
+version = "0.1.0"
+authors = ["Richard Wang <zhwang@live.com.au>"]
+
+[dependencies.trousers]
+git = "https://github.com/rzhw/rust-trousers.git"
