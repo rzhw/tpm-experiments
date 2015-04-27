@@ -6,6 +6,54 @@ use std::str::FromStr;
 use trousers::*;
 use std::ffi::CString;
 
+fn view_pcrs(tpm: &TssTPM) -> Result<(), TssResult> {
+    newt::centered_window(80, 30, "View PCRs");
+    let form = newt::Form::new(None, None, 0);
+    for i in 0..24 {
+        let mut s = String::new();
+        let vec = try!(tpm.pcr_read(i));
+        s.push_str(std::str::from_utf8(format!("PCR {:02}", i).as_bytes()).unwrap());
+        for j in 0..vec.len() {
+            if j % 4 == 0 {
+                s.push_str(" ");
+            }
+            s.push_str(std::str::from_utf8(format!("{:02x}", vec[j]).as_bytes()).unwrap());
+        }
+        s.push_str("\n");
+        let pcr_label = newt::Label::new(1, 1+(i as i32), &*s);
+        form.add_component(&pcr_label);
+    }
+    let button = newt::Button::new(1, 26, "OK");
+    form.add_component(&button);
+    form.run();
+    Ok(())
+}
+
+fn extend_pcr(tpm: &TssTPM) -> Result<(), TssResult> {
+    newt::centered_window(80, 30, "Extend PCR");
+    let form = newt::Form::new(None, None, 0);
+    let entry = newt::Entry::new(1, 1, None, 10, 0);
+    form.add_component(&entry);
+    let button = newt::Button::new(1, 26, "OK");
+    form.add_component(&button);
+    form.run();
+    let string = entry.get_value();
+
+    show_error(&*string);
+
+    Ok(())
+}
+
+fn show_error(error: &str) {
+    newt::centered_window(60, 10, "Error");
+    let form = newt::Form::new(None, None, 0);
+    let label = newt::Label::new(0, 0, error);
+    form.add_component(&label);
+    let button = newt::Button::new(1, 5, "OK");
+    form.add_component(&button);
+    form.run();
+}
+
 fn main() {
     newt::init();
     newt::cls();
@@ -16,27 +64,8 @@ fn main() {
     if let Ok(context) = contextresult {
         if let Ok(_) = context.connect() {
             if let Ok(tpm) = context.get_tpm_object() {
-                let form = newt::Form::new(None, None, 0);
-                let label = newt::Label::new(0, 0, "I'M IN UR TPM READING UR PCRZ (From Rust!)");
-                form.add_component(&label);
-                for i in 0..24 {
-                    let mut s = String::new();
-                    if let Ok(vec) = tpm.pcr_read(i) {
-                        s.push_str(std::str::from_utf8(format!("PCR {:02}", i).as_bytes()).unwrap());
-                        for j in 0..vec.len() {
-                            if j % 4 == 0 {
-                                s.push_str(" ");
-                            }
-                            s.push_str(std::str::from_utf8(format!("{:02x}", vec[j]).as_bytes()).unwrap());
-                        }
-                        s.push_str("\n");
-                    }
-                    let pcr_label = newt::Label::new(0, 1+(i as i32), &*s);
-                    form.add_component(&pcr_label);
-                }
-                let button = newt::Button::new(0, 26, "OK");
-                form.add_component(&button);
-                form.run();
+                view_pcrs(&tpm);
+                extend_pcr(&tpm);
 /*
                 println!("Let's extend a PCR!");
                 let to_extend = get_input::<u32>("Pick a PCR:");
@@ -91,14 +120,6 @@ fn main() {
         println!("Failed :(");
     }
 
-    /*
-    match blah {
-        Ok(context) => println!("Context created! {:?}", context.handle),
-        Err(e) => println!("Context failed with err {:?}", e),
-    }
-    println!("Hello world!");
-    */
-    newt::wait_for_key();
     newt::finished();
 }
 

@@ -9,7 +9,7 @@ dependencies = [
 [[package]]
 name = "newt"
 version = "0.0.0"
-source = "git+https://github.com/rzhw/rust-newt.git#e689e9f89205fb2dace3964368eb12ebfd272617"
+source = "git+https://github.com/rzhw/rust-newt.git#88499f61ebbdb55faf0e4d7b109344498e08ab09"
 
 [[package]]
 name = "trousers"
