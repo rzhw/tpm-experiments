@@ -17,7 +17,9 @@ extern {
     fn newtCenteredWindow(width: i32, height: i32, text: *const i8) -> i32;
     fn newtForm(vertBar: newtComponent, help: *const i8, flags: i32) -> newtComponent;
     fn newtFormAddComponent(form: newtComponent, co: newtComponent);
+    fn newtFormDestroy(form: newtComponent);
     fn newtRunForm(form: newtComponent) -> newtComponent;
+    fn newtButton(left: i32, top: i32, text: *const i8) -> newtComponent;
     fn newtLabel(left: i32, top: i32, text: *const i8) -> newtComponent;
 }
 
@@ -51,7 +53,10 @@ fn main() {
                             let form = newtForm(0, std::ptr::null(), 0);
                             let label = newtLabel(4, 4+(i as i32), CString::new(s).unwrap().as_ptr());
                             newtFormAddComponent(form, label);
+                            let button = newtButton(79, 0, CString::new("OK").unwrap().as_ptr());
+                            newtFormAddComponent(form, button);
                             newtRunForm(form);
+                            newtFormDestroy(form);
                         }
                     }
                 }
