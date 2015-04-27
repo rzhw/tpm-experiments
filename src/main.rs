@@ -24,26 +24,47 @@ fn main() {
                     }
                 }
 
-                println!("");
-                let to_extend = get_input::<u32>("Let's extend a PCR! Pick a PCR:");
+                println!("Let's extend a PCR!");
+                let to_extend = get_input::<u32>("Pick a PCR:");
                 if let Ok(new_pcr_value) = tpm.pcr_extend(to_extend, b"abcdefghijklmnopqrst") {
-                    println!("Extended the PCR!");
+                    println!("Extended the PCR! New PCR value:");
+                    print!("PCR {:02}", to_extend);
+                    for j in 0..new_pcr_value.len() {
+                        if j % 4 == 0 {
+                            print!(" ");
+                        }
+                        print!("{:02x}", new_pcr_value[j]);
+                    }
+                    print!("\n");
                 } else {
                     println!("Failed to extend :(");
                 }
 
-                println!("PCRs are now:");
-                for i in 0..24 {
-                    if let Ok(vec) = tpm.pcr_read(i) {
-                        print!("PCR {:02}", i);
-                        for j in 0..vec.len() {
-                            if j % 4 == 0 {
-                                print!(" ");
+                println!("Now let's reset a PCR!");
+                let to_reset = get_input::<u32>("Pick a PCR:");
+                if let Ok(pcrs) = context.create_pcr_composite_info_long() {
+                    if let Ok(_) = pcrs.select_pcr_index_ex(to_reset, 1) {
+                        if let Ok(_) = tpm.pcr_reset(&pcrs) {
+                            println!("Reset the PCR! New PCR value:");
+                            if let Ok(vec) = tpm.pcr_read(to_reset) {
+                                print!("PCR {:02}", to_reset);
+                                for j in 0..vec.len() {
+                                    if j % 4 == 0 {
+                                        print!(" ");
+                                    }
+                                    print!("{:02x}", vec[j]);
+                                }
+                            } else {
+                                println!("Failed to read it!");
                             }
-                            print!("{:02x}", vec[j]);
+                        } else {
+                            println!("Failed to reset!");
                         }
-                        print!("\n");
+                    } else {
+                        println!("Failed to select index!");
                     }
+                } else {
+                    println!("Failed to create PCR composite info object!");
                 }
             } else {
                 println!("Failed to get TPM handle :(")
