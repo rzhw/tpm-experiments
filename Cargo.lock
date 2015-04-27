@@ -2,11 +2,17 @@
 name = "shirtshirts"
 version = "0.1.0"
 dependencies = [
- "trousers 0.1.0 (git+https://github.com/rzhw/rust-trousers.git)",
+ "newt 0.0.0 (git+https://github.com/rzhw/rust-newt.git)",
+ "trousers 0.0.0 (git+https://github.com/rzhw/rust-trousers.git)",
 ]
 
 [[package]]
+name = "newt"
+version = "0.0.0"
+source = "git+https://github.com/rzhw/rust-newt.git#e689e9f89205fb2dace3964368eb12ebfd272617"
+
+[[package]]
 name = "trousers"
-version = "0.1.0"
-source = "git+https://github.com/rzhw/rust-trousers.git#b958487204f33dc2179907db006957345b1f2910"
+version = "0.0.0"
+source = "git+https://github.com/rzhw/rust-trousers.git#55ec9c33d98edbc6b6da24f7e9ba865938981b92"
 

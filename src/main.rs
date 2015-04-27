@@ -1,43 +1,22 @@
 extern crate trousers;
+extern crate newt;
 
 use std::io;
 use std::str::FromStr;
 use trousers::*;
-
 use std::ffi::CString;
 
-type newtComponent = u32;
-#[link(name = "newt")]
-extern {
-    fn newtInit();
-    fn newtCls();
-    fn newtWaitForKey();
-    fn newtDrawRootText(col: i32, row: i32, text: *const i8);
-    fn newtFinished();
-    fn newtCenteredWindow(width: i32, height: i32, text: *const i8) -> i32;
-    fn newtForm(vertBar: newtComponent, help: *const i8, flags: i32) -> newtComponent;
-    fn newtFormAddComponent(form: newtComponent, co: newtComponent);
-    fn newtFormDestroy(form: newtComponent);
-    fn newtRunForm(form: newtComponent) -> newtComponent;
-    fn newtButton(left: i32, top: i32, text: *const i8) -> newtComponent;
-    fn newtLabel(left: i32, top: i32, text: *const i8) -> newtComponent;
-}
-
 fn main() {
-    unsafe {
-        newtInit();
-        newtCls();
-        newtDrawRootText(0, 0, CString::new("Some root text").unwrap().as_ptr());
-        newtCenteredWindow(80, 30, CString::new("View PCRs").unwrap().as_ptr());
-    }
+    newt::init();
+    newt::cls();
+    newt::draw_root_text(0, 0, "Some root text");
+    newt::centered_window(80, 30, "View PCRs");
     // TODO: Any cleaner way to write this?
     let contextresult = TssContext::new();
     if let Ok(context) = contextresult {
         if let Ok(_) = context.connect() {
             if let Ok(tpm) = context.get_tpm_object() {
-                unsafe {
-                    newtLabel(4, 4, CString::new("I'M IN UR TPM READING UR PCRZ (From Rust!)").unwrap().as_ptr());
-                }
+                newt::label(4, 4, "I'M IN UR TPM READING UR PCRZ (From Rust!)");
                 for i in 0..24 {
                     let mut s = String::new();
                     if let Ok(vec) = tpm.pcr_read(i) {
@@ -49,15 +28,12 @@ fn main() {
                             s.push_str(std::str::from_utf8(format!("{:02x}", vec[j]).as_bytes()).unwrap());
                         }
                         s.push_str("\n");
-                        unsafe {
-                            let form = newtForm(0, std::ptr::null(), 0);
-                            let label = newtLabel(4, 4+(i as i32), CString::new(s).unwrap().as_ptr());
-                            newtFormAddComponent(form, label);
-                            let button = newtButton(79, 0, CString::new("OK").unwrap().as_ptr());
-                            newtFormAddComponent(form, button);
-                            newtRunForm(form);
-                            newtFormDestroy(form);
-                        }
+                        let form = newt::Form::new(None, None, 0);
+                        let button = newt::Button::new(79, 0, "OK");
+                        let label = newt::Label::new(4, 4+(i as i32), &*s);
+                        form.add_component(&button);
+                        form.add_component(&label);
+                        form.run();
                     }
                 }
 /*
@@ -121,10 +97,8 @@ fn main() {
     }
     println!("Hello world!");
     */
-    unsafe {
-        newtWaitForKey();
-        newtFinished();
-    }
+    newt::wait_for_key();
+    newt::finished();
 }
 
 fn get_input<A: FromStr>(message: &str) -> A {

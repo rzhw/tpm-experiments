@@ -5,3 +5,6 @@ authors = ["Richard Wang <zhwang@live.com.au>"]
 
 [dependencies.trousers]
 git = "https://github.com/rzhw/rust-trousers.git"
+
+[dependencies.newt]
+git = "https://github.com/rzhw/rust-newt.git"
