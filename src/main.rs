@@ -4,26 +4,58 @@ use std::io;
 use std::str::FromStr;
 use trousers::*;
 
+use std::ffi::CString;
+
+type newtComponent = u32;
+#[link(name = "newt")]
+extern {
+    fn newtInit();
+    fn newtCls();
+    fn newtWaitForKey();
+    fn newtDrawRootText(col: i32, row: i32, text: *const i8);
+    fn newtFinished();
+    fn newtCenteredWindow(width: i32, height: i32, text: *const i8) -> i32;
+    fn newtForm(vertBar: newtComponent, help: *const i8, flags: i32) -> newtComponent;
+    fn newtFormAddComponent(form: newtComponent, co: newtComponent);
+    fn newtRunForm(form: newtComponent) -> newtComponent;
+    fn newtLabel(left: i32, top: i32, text: *const i8) -> newtComponent;
+}
+
 fn main() {
+    unsafe {
+        newtInit();
+        newtCls();
+        newtDrawRootText(0, 0, CString::new("Some root text").unwrap().as_ptr());
+        newtCenteredWindow(80, 30, CString::new("View PCRs").unwrap().as_ptr());
+    }
     // TODO: Any cleaner way to write this?
     let contextresult = TssContext::new();
     if let Ok(context) = contextresult {
         if let Ok(_) = context.connect() {
             if let Ok(tpm) = context.get_tpm_object() {
-                println!("I'M IN UR TPM READING UR PCRZ (From Rust!)");
+                unsafe {
+                    newtLabel(4, 4, CString::new("I'M IN UR TPM READING UR PCRZ (From Rust!)").unwrap().as_ptr());
+                }
                 for i in 0..24 {
+                    let mut s = String::new();
                     if let Ok(vec) = tpm.pcr_read(i) {
-                        print!("PCR {:02}", i);
+                        s.push_str(std::str::from_utf8(format!("PCR {:02}", i).as_bytes()).unwrap());
                         for j in 0..vec.len() {
                             if j % 4 == 0 {
-                                print!(" ");
+                                s.push_str(" ");
                             }
-                            print!("{:02x}", vec[j]);
+                            s.push_str(std::str::from_utf8(format!("{:02x}", vec[j]).as_bytes()).unwrap());
                         }
-                        print!("\n");
+                        s.push_str("\n");
+                        unsafe {
+                            let form = newtForm(0, std::ptr::null(), 0);
+                            let label = newtLabel(4, 4+(i as i32), CString::new(s).unwrap().as_ptr());
+                            newtFormAddComponent(form, label);
+                            newtRunForm(form);
+                        }
                     }
                 }
-
+/*
                 println!("Let's extend a PCR!");
                 let to_extend = get_input::<u32>("Pick a PCR:");
                 if let Ok(new_pcr_value) = tpm.pcr_extend(to_extend, b"abcdefghijklmnopqrst") {
@@ -66,6 +98,7 @@ fn main() {
                 } else {
                     println!("Failed to create PCR composite info object!");
                 }
+                */
             } else {
                 println!("Failed to get TPM handle :(")
             }
@@ -83,6 +116,10 @@ fn main() {
     }
     println!("Hello world!");
     */
+    unsafe {
+        newtWaitForKey();
+        newtFinished();
+    }
 }
 
 fn get_input<A: FromStr>(message: &str) -> A {
