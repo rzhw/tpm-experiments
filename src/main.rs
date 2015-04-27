@@ -16,7 +16,9 @@ fn main() {
     if let Ok(context) = contextresult {
         if let Ok(_) = context.connect() {
             if let Ok(tpm) = context.get_tpm_object() {
-                newt::label(4, 4, "I'M IN UR TPM READING UR PCRZ (From Rust!)");
+                let form = newt::Form::new(None, None, 0);
+                let label = newt::Label::new(0, 0, "I'M IN UR TPM READING UR PCRZ (From Rust!)");
+                form.add_component(&label);
                 for i in 0..24 {
                     let mut s = String::new();
                     if let Ok(vec) = tpm.pcr_read(i) {
@@ -28,14 +30,13 @@ fn main() {
                             s.push_str(std::str::from_utf8(format!("{:02x}", vec[j]).as_bytes()).unwrap());
                         }
                         s.push_str("\n");
-                        let form = newt::Form::new(None, None, 0);
-                        let button = newt::Button::new(79, 0, "OK");
-                        let label = newt::Label::new(4, 4+(i as i32), &*s);
-                        form.add_component(&button);
-                        form.add_component(&label);
-                        form.run();
                     }
+                    let pcr_label = newt::Label::new(0, 1+(i as i32), &*s);
+                    form.add_component(&pcr_label);
                 }
+                let button = newt::Button::new(0, 26, "OK");
+                form.add_component(&button);
+                form.run();
 /*
                 println!("Let's extend a PCR!");
                 let to_extend = get_input::<u32>("Pick a PCR:");
