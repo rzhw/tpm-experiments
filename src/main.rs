@@ -20,7 +20,7 @@ fn read_pcr_as_str(tpm: &TssTPM, pcr_index: u32) -> Result<String, TssResult> {
     Ok(s)
 }
 
-fn view_pcrs(tpm: &TssTPM) -> Result<(), TssResult> {
+fn show_view_pcrs(tpm: &TssTPM) -> Result<(), TssResult> {
     newt::centered_window(80, 30, "View PCRs");
     let form = newt::form(None, None, 0);
     for i in 0..24 {
@@ -34,7 +34,7 @@ fn view_pcrs(tpm: &TssTPM) -> Result<(), TssResult> {
     Ok(())
 }
 
-fn extend_pcr(tpm: &TssTPM) -> Result<(), TssResult> {
+fn show_extend_pcr(tpm: &TssTPM) -> Result<(), TssResult> {
     loop {
         newt::centered_window(80, 30, "Extend PCR");
         let form = newt::form(None, None, 0);
@@ -88,6 +88,28 @@ fn show_message(title: &str, message: &str) {
     newt::run_form(form);
 }
 
+fn show_menu(tpm: &TssTPM) {
+    loop {
+        newt::centered_window(80, 30, "Menu");
+        let form = newt::form(None, None, 0);
+        let listbox = newt::listbox(0, 0, 30, newt::NEWT_FLAG_RETURNEXIT);
+        newt::listbox_append_entry(listbox, "View PCRs", 0);
+        newt::listbox_append_entry(listbox, "Extend PCR", 1);
+        newt::listbox_append_entry(listbox, "Reset PCR", 2);
+        newt::listbox_append_entry(listbox, "Exit", 3);
+        newt::form_add_component(form, listbox);
+        newt::run_form(form);
+        let result = newt::listbox_get_current(listbox);
+        if result == 0 {
+            show_view_pcrs(tpm);
+        } else if result == 1 {
+            show_extend_pcr(tpm);
+        } else if result == 3 {
+            return;
+        }
+    }
+}
+
 fn main() {
     newt::init();
     newt::cls();
@@ -98,8 +120,7 @@ fn main() {
     if let Ok(context) = contextresult {
         if let Ok(_) = context.connect() {
             if let Ok(tpm) = context.get_tpm_object() {
-                view_pcrs(&tpm);
-                extend_pcr(&tpm);
+                show_menu(&tpm);
 /*
                 println!("Now let's reset a PCR!");
                 let to_reset = get_input::<u32>("Pick a PCR:");
@@ -139,27 +160,4 @@ fn main() {
     }
 
     newt::finished();
-}
-
-fn get_input<A: FromStr>(message: &str) -> A {
-    get_input_custom_errmsg(message, "Try again")
-}
-fn get_input_custom_errmsg<A: FromStr>(message: &str, err_message: &str) -> A {
-    println!("{}", message);
-    let mut line = String::new();
-    match io::stdin().read_line(&mut line) {
-        Ok(_) =>
-            match line.trim().parse() {
-            Ok(x) => x,
-            // TODO: Rust doesn't optimize tail calls?
-            Err(_) => {
-                println!("{}", err_message);
-                get_input(message)
-            }
-        },
-        Err(_) => {
-            println!("{}", err_message);
-            get_input(message)
-        }
-    }
 }
