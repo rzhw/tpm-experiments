@@ -6,18 +6,53 @@ use std::str::FromStr;
 use trousers::*;
 use std::ffi::CString;
 
-fn read_pcr_as_str(tpm: &TssTPM, pcr_index: u32) -> Result<String, TssResult> {
-    let mut s = String::new();
-    let vec = try!(tpm.pcr_read(pcr_index));
-    s.push_str(std::str::from_utf8(format!("PCR {:02}", pcr_index).as_bytes()).unwrap());
-    for j in 0..vec.len() {
-        if j % 4 == 0 {
-            s.push_str(" ");
+fn main() {
+    newt::init();
+    newt::cls();
+    newt::draw_root_text(0, 0, "Some root text");
+    newt::centered_window(80, 30, "View PCRs");
+    // TODO: Any cleaner way to write this?
+    let contextresult = TssContext::new();
+    if let Ok(context) = contextresult {
+        if let Ok(_) = context.connect() {
+            if let Ok(tpm) = context.get_tpm_object() {
+                show_menu(&tpm);
+            } else {
+                println!("Failed to get TPM handle :(")
+            }
+        } else {
+            println!("Failed to connect :(");
         }
-        s.push_str(std::str::from_utf8(format!("{:02x}", vec[j]).as_bytes()).unwrap());
+    } else {
+        println!("Failed :(");
     }
-    s.push_str("\n");
-    Ok(s)
+
+    newt::finished();
+}
+
+fn show_menu(tpm: &TssTPM) {
+    loop {
+        newt::centered_window(80, 30, "Menu");
+        let form = newt::form(None, None, 0);
+        let listbox = newt::listbox(0, 0, 30, newt::NEWT_FLAG_RETURNEXIT);
+        newt::listbox_append_entry(listbox, "View PCRs", 0);
+        newt::listbox_append_entry(listbox, "Extend PCR", 1);
+        newt::listbox_append_entry(listbox, "Reset PCR", 2);
+        newt::listbox_append_entry(listbox, "Exit", 3);
+        newt::form_add_component(form, listbox);
+        newt::run_form(form);
+        newt::form_destroy(form);
+        let result = newt::listbox_get_current(listbox);
+        if result == 0 {
+            show_view_pcrs(tpm);
+        } else if result == 1 {
+            show_extend_pcr(tpm);
+        } else if result == 2 {
+            show_reset_pcr(tpm);
+        } else if result == 3 {
+            return;
+        }
+    }
 }
 
 fn show_view_pcrs(tpm: &TssTPM) -> Result<(), TssResult> {
@@ -140,51 +175,16 @@ fn show_message(title: &str, message: &str) {
     newt::form_destroy(form);
 }
 
-fn show_menu(tpm: &TssTPM) {
-    loop {
-        newt::centered_window(80, 30, "Menu");
-        let form = newt::form(None, None, 0);
-        let listbox = newt::listbox(0, 0, 30, newt::NEWT_FLAG_RETURNEXIT);
-        newt::listbox_append_entry(listbox, "View PCRs", 0);
-        newt::listbox_append_entry(listbox, "Extend PCR", 1);
-        newt::listbox_append_entry(listbox, "Reset PCR", 2);
-        newt::listbox_append_entry(listbox, "Exit", 3);
-        newt::form_add_component(form, listbox);
-        newt::run_form(form);
-        newt::form_destroy(form);
-        let result = newt::listbox_get_current(listbox);
-        if result == 0 {
-            show_view_pcrs(tpm);
-        } else if result == 1 {
-            show_extend_pcr(tpm);
-        } else if result == 2 {
-            show_reset_pcr(tpm);
-        } else if result == 3 {
-            return;
+fn read_pcr_as_str(tpm: &TssTPM, pcr_index: u32) -> Result<String, TssResult> {
+    let mut s = String::new();
+    let vec = try!(tpm.pcr_read(pcr_index));
+    s.push_str(std::str::from_utf8(format!("PCR {:02}", pcr_index).as_bytes()).unwrap());
+    for j in 0..vec.len() {
+        if j % 4 == 0 {
+            s.push_str(" ");
         }
+        s.push_str(std::str::from_utf8(format!("{:02x}", vec[j]).as_bytes()).unwrap());
     }
-}
-
-fn main() {
-    newt::init();
-    newt::cls();
-    newt::draw_root_text(0, 0, "Some root text");
-    newt::centered_window(80, 30, "View PCRs");
-    // TODO: Any cleaner way to write this?
-    let contextresult = TssContext::new();
-    if let Ok(context) = contextresult {
-        if let Ok(_) = context.connect() {
-            if let Ok(tpm) = context.get_tpm_object() {
-                show_menu(&tpm);
-            } else {
-                println!("Failed to get TPM handle :(")
-            }
-        } else {
-            println!("Failed to connect :(");
-        }
-    } else {
-        println!("Failed :(");
-    }
-
-    newt::finished();
+    s.push_str("\n");
+    Ok(s)
 }
